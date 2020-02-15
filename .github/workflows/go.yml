@@ -1,7 +1,6 @@
-name: Go
+name: power-logger
 on: [push]
 jobs:
-
   build:
     name: Build
     runs-on: ubuntu-latest
