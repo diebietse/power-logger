@@ -16,7 +16,7 @@ func TestClose(t *testing.T) {
 	assert.NoError(t, err, "Could not create logger")
 	err = l.update()
 	assert.NoError(t, err, "No update error expected")
-	go l.Poller()
+	l.Poller()
 	time.Sleep((pollRateSec + 1) * time.Second)
 	l.Close()
 }

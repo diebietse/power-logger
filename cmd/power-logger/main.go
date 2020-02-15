@@ -40,7 +40,7 @@ func main() {
 		log.Fatal(err)
 	}
 	defer l.Close()
-	go l.Poller()
+	l.Poller()
 
 	log.Printf("Starting server: %v", *addr)
 	err = http.ListenAndServe(*addr, nil)

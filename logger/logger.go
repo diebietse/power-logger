@@ -35,7 +35,7 @@ type Logger struct {
 	client       modbus.Client
 	gauges       []loggerGauge
 	readFailures prometheus.Gauge
-	wg           *sync.WaitGroup
+	wg           sync.WaitGroup
 	stop         chan struct{}
 }
 
@@ -57,7 +57,7 @@ func New(client modbus.Client, deviceName string) (*Logger, error) {
 			Help:        "Sensor read errors",
 			ConstLabels: label,
 		}),
-		wg:   &sync.WaitGroup{},
+		wg:   sync.WaitGroup{},
 		stop: make(chan struct{}),
 	}
 
@@ -204,16 +204,19 @@ func (l *Logger) Poller() {
 	if err := l.update(); err != nil {
 		log.Errorf("Could not update values: %v", err)
 	}
-	for {
-		select {
-		case <-ticker.C:
-			if err := l.update(); err != nil {
-				log.Errorf("Could not update values: %v", err)
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				if err := l.update(); err != nil {
+					log.Errorf("Could not update values: %v", err)
+				}
+			case <-l.stop:
+				ticker.Stop()
+				return
 			}
-		case <-l.stop:
-			return
 		}
-	}
+	}()
 }
 
 // Close stops the poller
