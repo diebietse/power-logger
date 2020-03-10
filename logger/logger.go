@@ -43,6 +43,7 @@ const (
 	pollRateSec = 10
 )
 
+// Logger contains the Gauges for a logger instance
 type Logger struct {
 	client       modbus.Client
 	gauges       []loggerGauge
@@ -58,6 +59,7 @@ type loggerGauge struct {
 	valueFunc func(data []byte, offset int, scale float64) float64
 }
 
+// New returns new logger with a given name and modbus client
 func New(client modbus.Client, deviceName string) (*Logger, error) {
 	label := map[string]string{"device_name": deviceName}
 
