@@ -182,11 +182,11 @@ func generateGauges(label map[string]string) []loggerGauge {
 func (l *Logger) update() error {
 	res, err := l.client.ReadHoldingRegisters(0, readSize)
 	if err != nil {
-		l.readFailures.Add(1)
+		l.errorEvent()
 		return fmt.Errorf("could not read values: %v", err)
 	}
 	if len(res) != readSize*2 {
-		l.readFailures.Add(1)
+		l.errorEvent()
 		return fmt.Errorf("invalid read size: %v", len(res))
 	}
 
@@ -194,6 +194,13 @@ func (l *Logger) update() error {
 		g.Set(g.valueFunc(res, g.register, g.scale))
 	}
 	return nil
+}
+
+func (l *Logger) errorEvent() {
+	l.readFailures.Add(1)
+	for _, g := range l.gauges {
+		g.Set(0)
+	}
 }
 
 // Poller starts the polling of the new values device
