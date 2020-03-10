@@ -12,18 +12,30 @@ import (
 )
 
 const (
-	voltageReg        = 0
-	currentReg        = 2
-	frequencyReg      = 4
-	activePowerReg    = 6
-	reactivePowerReg  = 8
-	apparentPowerReg  = 10
-	powerFactorReg    = 12
-	activeEnergyReg   = 14
-	reactiveEnergyReg = 34
-	tsReg             = 54
-	timeReg           = 66
-	temperatureReg    = 74
+	// VoltageReg input voltage register of 16 bits
+	VoltageReg = 0
+	// CurrentReg input current register of 16 bits
+	CurrentReg = 2
+	// FrequencyReg input frequency register of 16 bits
+	FrequencyReg = 4
+	// ActivePowerReg input active power register of 16 bits
+	ActivePowerReg = 6
+	// ReactivePowerReg input reactive power register of 16 bits
+	ReactivePowerReg = 8
+	// ApparentPowerReg input apparent power register of 16 bits
+	ApparentPowerReg = 10
+	// PowerFactorReg input power factor register of 16 bits
+	PowerFactorReg = 12
+	// ActiveEnergyReg input active energy register of 5 x 32 bits
+	ActiveEnergyReg = 14
+	// ReactiveEnergyReg input reactive energy register of 5 x 32 bits
+	ReactiveEnergyReg = 34
+	// TsReg energy time slot registers of 4 x 24 bits
+	TsReg = 54
+	// TimeReg internal real time clock for the time slots at 64 bits
+	TimeReg = 66
+	// TemperatureReg device temperature register of 16 bits
+	TemperatureReg = 74
 )
 
 const (
@@ -82,7 +94,7 @@ func generateGauges(label map[string]string) []loggerGauge {
 				Help:        "Mains voltage",
 				ConstLabels: label,
 			}),
-			register:  voltageReg,
+			register:  VoltageReg,
 			scale:     10,
 			valueFunc: get16BitValue,
 		},
@@ -92,7 +104,7 @@ func generateGauges(label map[string]string) []loggerGauge {
 				Help:        "Mains current",
 				ConstLabels: label,
 			}),
-			register:  currentReg,
+			register:  CurrentReg,
 			scale:     10,
 			valueFunc: get16BitValue,
 		},
@@ -102,7 +114,7 @@ func generateGauges(label map[string]string) []loggerGauge {
 				Help:        "Mains frequency",
 				ConstLabels: label,
 			}),
-			register:  frequencyReg,
+			register:  FrequencyReg,
 			scale:     10,
 			valueFunc: get16BitValue,
 		},
@@ -112,7 +124,7 @@ func generateGauges(label map[string]string) []loggerGauge {
 				Help:        "Mains active power",
 				ConstLabels: label,
 			}),
-			register:  activePowerReg,
+			register:  ActivePowerReg,
 			scale:     1,
 			valueFunc: get16BitValue,
 		},
@@ -122,7 +134,7 @@ func generateGauges(label map[string]string) []loggerGauge {
 				Help:        "Mains reactive power",
 				ConstLabels: label,
 			}),
-			register:  reactivePowerReg,
+			register:  ReactivePowerReg,
 			scale:     1,
 			valueFunc: get16BitValue,
 		},
@@ -132,7 +144,7 @@ func generateGauges(label map[string]string) []loggerGauge {
 				Help:        "Mains appartent power",
 				ConstLabels: label,
 			}),
-			register:  apparentPowerReg,
+			register:  ApparentPowerReg,
 			scale:     1,
 			valueFunc: get16BitValue,
 		},
@@ -142,7 +154,7 @@ func generateGauges(label map[string]string) []loggerGauge {
 				Help:        "Mains power factor",
 				ConstLabels: label,
 			}),
-			register:  powerFactorReg,
+			register:  PowerFactorReg,
 			scale:     1000,
 			valueFunc: get16BitValue,
 		},
@@ -152,7 +164,7 @@ func generateGauges(label map[string]string) []loggerGauge {
 				Help:        "Mains active energy",
 				ConstLabels: label,
 			}),
-			register:  activeEnergyReg,
+			register:  ActiveEnergyReg,
 			scale:     100,
 			valueFunc: get32BitEnergy,
 		},
@@ -162,7 +174,7 @@ func generateGauges(label map[string]string) []loggerGauge {
 				Help:        "Mains reactive energy",
 				ConstLabels: label,
 			}),
-			register:  reactiveEnergyReg,
+			register:  ReactiveEnergyReg,
 			scale:     100,
 			valueFunc: get32BitEnergy,
 		},
@@ -172,7 +184,7 @@ func generateGauges(label map[string]string) []loggerGauge {
 				Help:        "Mains device temperature",
 				ConstLabels: label,
 			}),
-			register:  temperatureReg,
+			register:  TemperatureReg,
 			scale:     1,
 			valueFunc: get16BitValue,
 		},
