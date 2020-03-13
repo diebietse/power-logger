@@ -2,6 +2,7 @@ package logger
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -95,4 +96,68 @@ func (m *mockModbus) MaskWriteRegister(address, andMask, orMask uint16) (results
 }
 func (m *mockModbus) ReadFIFOQueue(address uint16) (results []byte, err error) {
 	return m.readData, m.err
+}
+
+func Test_energyFilter_filter(t *testing.T) {
+	tests := []struct {
+		name   string
+		filter *energyFilter
+		args   []float64
+		want   float64
+	}{
+		{
+			name:   "Happy path",
+			filter: newEnergyFilter(100),
+			args: []float64{
+				10, 10.01, 10.02, 10.03,
+			},
+			want: 10.03,
+		},
+		{
+			name:   "Disallow decreasing value",
+			filter: newEnergyFilter(100),
+			args: []float64{
+				10, 10.01, 9,
+			},
+			want: 10.01,
+		},
+		{
+			name:   "Disallow zero value",
+			filter: newEnergyFilter(100),
+			args: []float64{
+				10, 10, 0,
+			},
+			want: 10,
+		},
+		{
+			name:   "Disallow large increase",
+			filter: newEnergyFilter(100),
+			args: []float64{
+				10, 20,
+			},
+			want: 10,
+		},
+		{
+			name:   "Allow occasional updates",
+			filter: newEnergyFilter(100),
+			args: []float64{
+				10, 10, 10, 10, 10, 10, 10, 10, 10.5,
+			},
+			want: 10.5,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var got float64
+			notNow := time.Time{}
+			for _, in := range tt.args {
+				got = tt.filter.filter(in, notNow)
+				notNow = notNow.Add(time.Second * pollRateSec)
+			}
+			if got != tt.want {
+				t.Errorf("energyFilter.filter() = %v, want %v", got, tt.want)
+				fmt.Printf("%#v\n", tt.filter)
+			}
+		})
+	}
 }

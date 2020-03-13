@@ -57,6 +57,7 @@ type loggerGauge struct {
 	register  int
 	scale     float64
 	valueFunc func(data []byte, offset int, scale float64) float64
+	filter    func(value float64, t time.Time) float64
 	sticky    bool
 }
 
@@ -170,6 +171,7 @@ func generateGauges(label map[string]string) []loggerGauge {
 			register:  ActiveEnergyReg,
 			scale:     100,
 			valueFunc: get32BitEnergy,
+			filter:    newEnergyFilter(100).filter,
 			sticky:    true,
 		},
 		{
@@ -181,6 +183,7 @@ func generateGauges(label map[string]string) []loggerGauge {
 			register:  ReactiveEnergyReg,
 			scale:     100,
 			valueFunc: get32BitEnergy,
+			filter:    newEnergyFilter(100).filter,
 			sticky:    true,
 		},
 		{
@@ -196,6 +199,39 @@ func generateGauges(label map[string]string) []loggerGauge {
 	}
 }
 
+func newEnergyFilter(maxCurrent float64) *energyFilter {
+	max := (((maxCurrent * 230) / 1000) / 3600)
+	return &energyFilter{
+		maxIncrease: max,
+	}
+}
+
+type energyFilter struct {
+	prevChange  time.Time
+	prevValid   float64
+	maxIncrease float64
+}
+
+func (f *energyFilter) filter(in float64, t time.Time) float64 {
+	if f.prevValid == 0 {
+		f.prevChange = t
+		f.prevValid = in
+		return in
+	}
+	if in < f.prevValid {
+		return f.prevValid
+	}
+	maxIncrease := f.maxIncrease * t.Sub(f.prevChange).Seconds()
+	if in > f.prevValid+maxIncrease {
+		return f.prevValid
+	}
+	if f.prevValid != in {
+		f.prevChange = t
+	}
+	f.prevValid = in
+	return in
+}
+
 func (l *Logger) update() error {
 	res, err := l.client.ReadHoldingRegisters(0, readSize)
 	if err != nil {
@@ -208,7 +244,11 @@ func (l *Logger) update() error {
 	}
 
 	for _, g := range l.gauges {
-		g.Set(g.valueFunc(res, g.register, g.scale))
+		value := g.valueFunc(res, g.register, g.scale)
+		if g.filter != nil {
+			value = g.filter(value, time.Now())
+		}
+		g.Set(value)
 	}
 	return nil
 }
