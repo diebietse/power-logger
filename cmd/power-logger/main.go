@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/diebietse/power-logger/logger"
 	"github.com/goburrow/modbus"
-	"github.com/ncthompson/power-logger/logger"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 )
