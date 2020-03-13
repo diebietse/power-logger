@@ -57,6 +57,7 @@ type loggerGauge struct {
 	register  int
 	scale     float64
 	valueFunc func(data []byte, offset int, scale float64) float64
+	sticky    bool
 }
 
 // New returns new logger with a given name and modbus client
@@ -169,6 +170,7 @@ func generateGauges(label map[string]string) []loggerGauge {
 			register:  ActiveEnergyReg,
 			scale:     100,
 			valueFunc: get32BitEnergy,
+			sticky:    true,
 		},
 		{
 			Gauge: prometheus.NewGauge(prometheus.GaugeOpts{
@@ -179,6 +181,7 @@ func generateGauges(label map[string]string) []loggerGauge {
 			register:  ReactiveEnergyReg,
 			scale:     100,
 			valueFunc: get32BitEnergy,
+			sticky:    true,
 		},
 		{
 			Gauge: prometheus.NewGauge(prometheus.GaugeOpts{
@@ -213,7 +216,9 @@ func (l *Logger) update() error {
 func (l *Logger) errorEvent() {
 	l.readFailures.Add(1)
 	for _, g := range l.gauges {
-		g.Set(0)
+		if !g.sticky {
+			g.Set(0)
+		}
 	}
 }
 
