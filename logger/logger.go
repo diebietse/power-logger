@@ -113,7 +113,7 @@ func generateGauges(label map[string]string) []loggerGauge {
 		},
 		{
 			Gauge: prometheus.NewGauge(prometheus.GaugeOpts{
-				Name:        "mains_frequency_v",
+				Name:        "mains_frequency_hz",
 				Help:        "Mains frequency",
 				ConstLabels: label,
 			}),
