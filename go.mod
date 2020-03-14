@@ -1,4 +1,4 @@
-module github.com/ncthompson/power-logger
+module github.com/diebietse/power-logger
 
 go 1.13
 

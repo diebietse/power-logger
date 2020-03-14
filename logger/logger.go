@@ -39,8 +39,10 @@ const (
 )
 
 const (
-	readSize    = 39
-	pollRateSec = 10
+	readSize        = 39
+	pollRateSec     = 10
+	avgVoltage      = 230
+	meterMaxCurrent = 100 // The power meter is rated for 100A
 )
 
 // Logger contains the Gauges for a logger instance
@@ -57,6 +59,8 @@ type loggerGauge struct {
 	register  int
 	scale     float64
 	valueFunc func(data []byte, offset int, scale float64) float64
+	filter    func(value float64, t time.Time) float64
+	sticky    bool
 }
 
 // New returns new logger with a given name and modbus client
@@ -112,7 +116,7 @@ func generateGauges(label map[string]string) []loggerGauge {
 		},
 		{
 			Gauge: prometheus.NewGauge(prometheus.GaugeOpts{
-				Name:        "mains_frequency_v",
+				Name:        "mains_frequency_hz",
 				Help:        "Mains frequency",
 				ConstLabels: label,
 			}),
@@ -169,6 +173,8 @@ func generateGauges(label map[string]string) []loggerGauge {
 			register:  ActiveEnergyReg,
 			scale:     100,
 			valueFunc: get32BitEnergy,
+			filter:    newEnergyFilter(meterMaxCurrent).filter,
+			sticky:    true,
 		},
 		{
 			Gauge: prometheus.NewGauge(prometheus.GaugeOpts{
@@ -179,6 +185,8 @@ func generateGauges(label map[string]string) []loggerGauge {
 			register:  ReactiveEnergyReg,
 			scale:     100,
 			valueFunc: get32BitEnergy,
+			filter:    newEnergyFilter(meterMaxCurrent).filter,
+			sticky:    true,
 		},
 		{
 			Gauge: prometheus.NewGauge(prometheus.GaugeOpts{
@@ -193,6 +201,40 @@ func generateGauges(label map[string]string) []loggerGauge {
 	}
 }
 
+func newEnergyFilter(maxCurrent float64) *energyFilter {
+	// Maximum kWh increase per second
+	max := (((maxCurrent * avgVoltage) / 1000) / time.Hour.Seconds())
+	return &energyFilter{
+		maxIncrease: max,
+	}
+}
+
+type energyFilter struct {
+	prevChange  time.Time
+	prevValid   float64
+	maxIncrease float64
+}
+
+func (f *energyFilter) filter(in float64, t time.Time) float64 {
+	if f.prevValid == 0 {
+		f.prevChange = t
+		f.prevValid = in
+		return in
+	}
+	if in < f.prevValid {
+		return f.prevValid
+	}
+	maxIncrease := f.maxIncrease * t.Sub(f.prevChange).Seconds()
+	if in > f.prevValid+maxIncrease {
+		return f.prevValid
+	}
+	if f.prevValid != in {
+		f.prevChange = t
+	}
+	f.prevValid = in
+	return in
+}
+
 func (l *Logger) update() error {
 	res, err := l.client.ReadHoldingRegisters(0, readSize)
 	if err != nil {
@@ -205,7 +247,11 @@ func (l *Logger) update() error {
 	}
 
 	for _, g := range l.gauges {
-		g.Set(g.valueFunc(res, g.register, g.scale))
+		value := g.valueFunc(res, g.register, g.scale)
+		if g.filter != nil {
+			value = g.filter(value, time.Now())
+		}
+		g.Set(value)
 	}
 	return nil
 }
@@ -213,7 +259,9 @@ func (l *Logger) update() error {
 func (l *Logger) errorEvent() {
 	l.readFailures.Add(1)
 	for _, g := range l.gauges {
-		g.Set(0)
+		if !g.sticky {
+			g.Set(0)
+		}
 	}
 }
 
