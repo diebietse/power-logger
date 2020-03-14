@@ -39,8 +39,10 @@ const (
 )
 
 const (
-	readSize    = 39
-	pollRateSec = 10
+	readSize        = 39
+	pollRateSec     = 10
+	avgVoltage      = 230
+	meterMaxCurrent = 100 // The power meter is rated for 100A
 )
 
 // Logger contains the Gauges for a logger instance
@@ -171,7 +173,7 @@ func generateGauges(label map[string]string) []loggerGauge {
 			register:  ActiveEnergyReg,
 			scale:     100,
 			valueFunc: get32BitEnergy,
-			filter:    newEnergyFilter(100).filter,
+			filter:    newEnergyFilter(meterMaxCurrent).filter,
 			sticky:    true,
 		},
 		{
@@ -183,7 +185,7 @@ func generateGauges(label map[string]string) []loggerGauge {
 			register:  ReactiveEnergyReg,
 			scale:     100,
 			valueFunc: get32BitEnergy,
-			filter:    newEnergyFilter(100).filter,
+			filter:    newEnergyFilter(meterMaxCurrent).filter,
 			sticky:    true,
 		},
 		{
@@ -200,7 +202,8 @@ func generateGauges(label map[string]string) []loggerGauge {
 }
 
 func newEnergyFilter(maxCurrent float64) *energyFilter {
-	max := (((maxCurrent * 230) / 1000) / 3600)
+	// Maximum kWh increase per second
+	max := (((maxCurrent * avgVoltage) / 1000) / time.Hour.Seconds())
 	return &energyFilter{
 		maxIncrease: max,
 	}
