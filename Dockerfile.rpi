@@ -1,0 +1,17 @@
+FROM balenalib/raspberry-pi-debian-golang:1.14 AS builder
+WORKDIR /src
+
+COPY cmd cmd
+COPY logger logger
+COPY go.mod go.mod
+COPY go.sum go.sum
+
+RUN go mod vendor
+RUN CGO=0 GOOS=linux GOARCH=arm GOARM=5 go build -mod=vendor -o bin/power-logger ./cmd/power-logger
+
+FROM balenalib/raspberry-pi-debian
+
+WORKDIR /usr/bin/
+COPY --from=builder /src/bin/power-logger .
+
+ENTRYPOINT [ "power-logger" ]
