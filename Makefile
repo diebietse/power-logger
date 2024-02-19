@@ -28,3 +28,7 @@ lint:
 
 .PHONY: build-all
 build-all: build-x64 build-arm
+
+.PHONY: upgrade-vendor
+upgrade-vendor:
+	go get -u ./...
