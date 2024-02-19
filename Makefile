@@ -23,7 +23,7 @@ gofmt:
 lint:
 	docker run --rm -it \
 		-w /src -v $(shell pwd):/src \
-		golangci/golangci-lint:v1.23 golangci-lint run \
+		golangci/golangci-lint:v1.56 golangci-lint run \
 		-v -c .golangci.yml
 
 .PHONY: build-all
