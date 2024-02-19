@@ -1,6 +1,6 @@
 module github.com/diebietse/power-logger
 
-go 1.13
+go 1.22
 
 require (
 	github.com/goburrow/modbus v0.1.0
