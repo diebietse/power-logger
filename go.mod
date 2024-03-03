@@ -23,3 +23,6 @@ require (
 	google.golang.org/protobuf v1.32.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c // indirect
 )
+
+// Override for CVE-2022-28948
+replace gopkg.in/yaml.v3 => gopkg.in/yaml.v3 v3.0.1
